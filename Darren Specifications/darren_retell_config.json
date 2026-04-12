@@ -1,0 +1,115 @@
+{
+  "agent_id": "",
+  "channel": "voice",
+  "last_modification_timestamp": 1775752185232,
+  "agent_name": "darren",
+  "response_engine": {
+    "type": "retell-llm",
+    "llm_id": "llm_3b6b1ec5ba22eda00dd02da06410",
+    "version": 0
+  },
+  "webhook_url": "https://empowerai365.app.n8n.cloud/webhook/872acbb4-38cf-4ba1-add4-0daa5a06018c",
+  "language": "en-US",
+  "data_storage_setting": "everything",
+  "opt_in_signed_url": false,
+  "version": 0,
+  "is_published": false,
+  "post_call_analysis_model": "gpt-4.1-mini",
+  "pii_config": {
+    "mode": "post_call",
+    "categories": []
+  },
+  "handbook_config": {
+    "default_personality": true,
+    "ai_disclosure": true
+  },
+  "voice_id": "retell-Nico",
+  "max_call_duration_ms": 3600000,
+  "interruption_sensitivity": 0.9,
+  "allow_user_dtmf": true,
+  "user_dtmf_options": {},
+  "retellLlmData": {
+    "llm_id": "llm_3b6b1ec5ba22eda00dd02da06410",
+    "version": 0,
+    "model": "gpt-4.1",
+    "tool_call_strict_mode": true,
+    "general_prompt": "You are Darren, a dedicated AI phone agent and personal assistant. You are speaking with your owner over the phone. Keep all responses conversational, concise, and easy to follow by ear — no bullet points, no markdown, no lists. Speak in short, natural sentences.\n\n## Tools — call these functions exactly as described:\n\n1. When the owner asks about emails, what someone said, or anything in their inbox — first call Extract_Dynamic_Variable to capture the search query, then call search_gmail.\n\n2. When the owner wants to write or send an email — first call Extract_Dynamic_Variable to capture the recipient, subject, and message, then call create_email_draft.\n\n3. When the owner asks about prices, news, current events, or any topic needing live data — first call Extract_Dynamic_Variable to capture the topic, then call web_research.\n\n4. When the conversation is clearly finished and the owner wants to hang up — call end_call.\n\n## Behavior Rules\n- Always confirm before taking action. Say something like \"Got it, let me search your inbox — one moment.\"\n- After a task completes, give a brief spoken summary in under 3 sentences.\n- If you cannot find something, say so clearly and offer an alternative.\n- Never read out long raw text. Always summarize.\n- End each response with a short follow-up like \"Anything else I can help with?\"",
+    "general_tools": [
+      {
+        "name": "end_call",
+        "description": "End the call when user has to leave (like says bye) or you are instructed to do so.",
+        "type": "end_call",
+        "speak_after_execution": true
+      },
+      {
+        "name": "Extract_Dynamic_Variable",
+        "description": " you need an Extract Dynamic Variable tool that pulls the relevant info from the conversation",
+        "variables": [
+          {
+            "type": "string",
+            "name": "search_query",
+            "description": "What the user wants to search in Gmail"
+          },
+          {
+            "type": "string",
+            "name": "email_recipient",
+            "description": "Who the email should go to"
+          },
+          {
+            "type": "string",
+            "name": "email_subject",
+            "description": "Subject line of the email"
+          },
+          {
+            "type": "string",
+            "name": "email_body",
+            "description": "Content of the email"
+          },
+          {
+            "type": "string",
+            "name": "research_query",
+            "description": "What the user wants researched online"
+          }
+        ],
+        "type": "extract_dynamic_variable",
+        "speak_after_execution": true
+      },
+      {
+        "code": "const query = dv.search_query || \"recent emails\";\n\ntry {\n  const res = await fetch(\"https://empowerai365.app.n8n.cloud/webhook/872acbb4-38cf-4ba1-add4-0daa5a06018c\", {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({\n      chatInput: \"Search my Gmail for: \" + query\n    })\n  });\n\n  const data = await res.json();\n  const output = data.output || data.text || data.message || \"No results found.\";\n  return { result: output };\n\n} catch (err) {\n  return { result: \"Connection error while searching Gmail. Please try again.\" };\n}",
+        "timeout_ms": 30000,
+        "speak_after_execution": true,
+        "name": "search_gmail",
+        "description": "Search the owner's Gmail inbox for emails. Use Gmail search syntax like from:name, subject:topic, after:YYYY/MM/DD.",
+        "type": "code",
+        "speak_during_execution": false
+      },
+      {
+        "code": "const recipient = dv.email_recipient || \"unknown\";\nconst subject = dv.email_subject || \"No Subject\";\nconst body = dv.email_body || \"No content\";\n\ntry {\n  const res = await fetch(\"https://empowerai365.app.n8n.cloud/webhook/872acbb4-38cf-4ba1-add4-0daa5a06018c\", {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({\n      chatInput: \"Draft an email to \" + recipient + \" with subject '\" + subject + \"'. Message: \" + body\n    })\n  });\n\n  const data = await res.json();\n  const output = data.output || data.text || data.message || \"Draft saved successfully.\";\n  return { result: output };\n\n} catch (err) {\n  return { result: \"Connection error while creating the draft. Please try again.\" };\n}",
+        "timeout_ms": 30000,
+        "speak_after_execution": true,
+        "name": "create_email_draft",
+        "description": "Draft and save an email in Gmail for the owner to review. Never sends directly. Call this when the owner wants to write or send an email.",
+        "type": "code",
+        "speak_during_execution": false
+      },
+      {
+        "code": "const query = dv.research_query || \"latest news\";\n\ntry {\n  const res = await fetch(\"https://empowerai365.app.n8n.cloud/webhook/872acbb4-38cf-4ba1-add4-0daa5a06018c\", {\n    method: \"POST\",\n    headers: { \"Content-Type\": \"application/json\" },\n    body: JSON.stringify({\n      chatInput: \"Research this and give me a clear summary with sources: \" + query\n    })\n  });\n\n  const data = await res.json();\n  const output = data.output || data.text || data.message || \"No results found.\";\n  return { result: output };\n\n} catch (err) {\n  return { result: \"Connection error during web research. Please try again.\" };\n}",
+        "timeout_ms": 30000,
+        "speak_after_execution": true,
+        "name": "web_research",
+        "description": "Search the internet for current information, prices, news, or any topic. Call this when the owner asks about something that needs live data.",
+        "type": "code",
+        "speak_during_execution": false
+      }
+    ],
+    "start_speaker": "user",
+    "begin_message": "",
+    "knowledge_base_ids": [],
+    "kb_config": {
+      "top_k": 3,
+      "filter_score": 0.6
+    },
+    "last_modification_timestamp": 1775756234540,
+    "is_published": false
+  }
+}
