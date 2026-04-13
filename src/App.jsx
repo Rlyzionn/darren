@@ -563,9 +563,10 @@ export default function App() {
   const [transcript,     setTranscript]     = useState([])
   const [error,          setError]          = useState(null)
 
-  const retellRef    = useRef(null)
-  const agentDoneRef = useRef(false)   // true after agent_stop_talking fires
-  const stopTimerRef = useRef(null)    // fallback safety timeout
+  const retellRef        = useRef(null)
+  const agentDoneRef     = useRef(false)   // true after agent_stop_talking fires
+  const stopTimerRef     = useRef(null)    // fallback safety timeout
+  const silenceFramesRef = useRef(0)       // consecutive near-silent frames counter
 
   const scheduleStop = () => {
     agentDoneRef.current = true
@@ -587,6 +588,7 @@ export default function App() {
     client.on('agent_start_talking', () => {
       // Cancel any pending stop — agent is speaking again
       agentDoneRef.current = false
+      silenceFramesRef.current = 0
       if (stopTimerRef.current) { clearTimeout(stopTimerRef.current); stopTimerRef.current = null }
       setAgentState('speaking')
     })
@@ -595,14 +597,25 @@ export default function App() {
     client.on('agent_stop_talking', scheduleStop)
 
     // Raw audio samples from agent's audio track (enabled via emitRawAudioSamples)
-    // Fires every animation frame — use RMS to detect true silence
+    // Fires every animation frame — require 20 consecutive silent frames (~333ms)
+    // before stopping, to avoid false triggers from brief inter-chunk dips
     client.on('audio', (samples) => {
-      if (!agentDoneRef.current) return
+      if (!agentDoneRef.current) {
+        silenceFramesRef.current = 0
+        return
+      }
       const rms = Math.sqrt(samples.reduce((sum, s) => sum + s * s, 0) / samples.length)
       if (rms < 0.003) {
-        if (stopTimerRef.current) { clearTimeout(stopTimerRef.current); stopTimerRef.current = null }
-        agentDoneRef.current = false
-        setAgentState('listening')
+        silenceFramesRef.current++
+        if (silenceFramesRef.current >= 20) {
+          if (stopTimerRef.current) { clearTimeout(stopTimerRef.current); stopTimerRef.current = null }
+          agentDoneRef.current = false
+          silenceFramesRef.current = 0
+          setAgentState('listening')
+        }
+      } else {
+        // Audio still playing — reset counter
+        silenceFramesRef.current = 0
       }
     })
 
