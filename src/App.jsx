@@ -142,7 +142,7 @@ function InstallButton() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated background — slow drifting colour blobs, reactive to agent speech
+// Animated background — drifting blobs + breathing glow, reactive to speech
 // ─────────────────────────────────────────────────────────────────────────────
 function BackgroundCanvas({ speaking }) {
   const d1 = speaking ? 6  : 24
@@ -151,42 +151,93 @@ function BackgroundCanvas({ speaking }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+
+      {/* ── Full-screen breathing radial — centre glow ── */}
       <motion.div
-        animate={{ x: ['-8%', '12%', '-4%', '-8%'], y: ['6%', '-8%', '14%', '6%'] }}
+        animate={speaking
+          ? { opacity: [0.18, 0.38, 0.22, 0.40, 0.18], scale: [1, 1.12, 1.04, 1.15, 1] }
+          : { opacity: [0.04, 0.08, 0.04],              scale: [1, 1.03, 1]             }}
+        transition={{ duration: speaking ? 2.2 : 5, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute', inset: '-20%',
+          background: 'radial-gradient(ellipse at 50% 50%, rgba(90,0,200,1) 0%, rgba(0,20,80,0.5) 45%, transparent 72%)',
+          filter: 'blur(60px)',
+        }}
+      />
+
+      {/* ── Edge rim glow — corners light up when speaking ── */}
+      <motion.div
+        animate={speaking
+          ? { opacity: [0.12, 0.28, 0.14, 0.30, 0.12] }
+          : { opacity: [0.02, 0.05, 0.02]              }}
+        transition={{ duration: speaking ? 1.8 : 6, repeat: Infinity, ease: 'easeInOut' }}
+        style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(60,0,140,0.55) 100%)',
+          filter: 'blur(30px)',
+        }}
+      />
+
+      {/* ── Blob 1 — top left, purple ── */}
+      <motion.div
+        animate={{
+          x: ['-8%', '12%', '-4%', '-8%'],
+          y: ['6%', '-8%', '14%', '6%'],
+          scale: speaking ? [1, 1.18, 1.08, 1.22, 1] : [1, 1.03, 1],
+        }}
         transition={{ duration: d1, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', width: '75vw', height: '75vw', top: '-20%', left: '-15%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(100,0,220,0.78) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(38,0,90,0.45) 0%, transparent 65%)',
+            ? 'radial-gradient(circle, rgba(110,0,240,0.82) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(38,0,90,0.42) 0%, transparent 65%)',
           filter: 'blur(70px)',
-          transition: 'background 0.6s ease',
+          transition: 'background 0.7s ease',
         }}
       />
+
+      {/* ── Blob 2 — bottom right, blue ── */}
       <motion.div
-        animate={{ x: ['8%', '-12%', '4%', '8%'], y: ['-6%', '10%', '-12%', '-6%'] }}
+        animate={{
+          x: ['8%', '-12%', '4%', '8%'],
+          y: ['-6%', '10%', '-12%', '-6%'],
+          scale: speaking ? [1, 1.15, 1.05, 1.20, 1] : [1, 1.02, 1],
+        }}
         transition={{ duration: d2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', width: '65vw', height: '65vw', bottom: '-18%', right: '-12%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(0,60,200,0.75) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(0,18,70,0.5) 0%, transparent 65%)',
+            ? 'radial-gradient(circle, rgba(0,70,220,0.78) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(0,18,70,0.48) 0%, transparent 65%)',
           filter: 'blur(65px)',
-          transition: 'background 0.6s ease',
+          transition: 'background 0.7s ease',
         }}
       />
+
+      {/* ── Blob 3 — centre, indigo/teal ── */}
       <motion.div
-        animate={{ x: ['-4%', '6%', '-8%', '-4%'], y: ['8%', '-4%', '5%', '8%'], scale: [1, 1.08, 0.96, 1] }}
+        animate={{
+          x: ['-4%', '6%', '-8%', '-4%'],
+          y: ['8%', '-4%', '5%', '8%'],
+          scale: speaking ? [1, 1.20, 1.06, 1.18, 1] : [1, 1.08, 0.96, 1],
+        }}
         transition={{ duration: d3, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', width: '50vw', height: '50vw', top: '25%', left: '20%',
+          position: 'absolute', width: '55vw', height: '55vw', top: '25%', left: '20%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(0,100,140,0.72) 0%, transparent 65%)'
-            : 'radial-gradient(circle, rgba(0,38,55,0.38) 0%, transparent 65%)',
+            ? 'radial-gradient(circle, rgba(20,80,180,0.65) 0%, rgba(80,0,180,0.45) 45%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(0,38,55,0.35) 0%, transparent 65%)',
           filter: 'blur(55px)',
-          transition: 'background 0.6s ease',
+          transition: 'background 0.7s ease',
         }}
       />
+
+      {/* ── Subtle vignette always present ── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%)',
+        pointerEvents: 'none',
+      }} />
     </div>
   )
 }
