@@ -563,20 +563,56 @@ export default function App() {
   const [transcript,     setTranscript]     = useState([])
   const [error,          setError]          = useState(null)
 
-  const retellRef = useRef(null)
+  const retellRef    = useRef(null)
+  const agentDoneRef = useRef(false)   // true after agent_stop_talking fires
+  const stopTimerRef = useRef(null)    // fallback safety timeout
+
+  const scheduleStop = () => {
+    agentDoneRef.current = true
+    // Fallback: if audio-level detection never fires, stop after 5s
+    if (stopTimerRef.current) clearTimeout(stopTimerRef.current)
+    stopTimerRef.current = setTimeout(() => {
+      setAgentState('listening')
+      agentDoneRef.current = false
+    }, 5000)
+  }
 
   useEffect(() => {
     const client = new RetellWebClient()
     retellRef.current = client
 
-    client.on('call_started',       () => { setCallState('active'); setAgentState('listening'); setError(null) })
-    client.on('call_ended',         () => { setCallState('ended'); setAgentState('idle'); setTimeout(() => setCallState('idle'), 2200) })
-    client.on('agent_start_talking',() => setAgentState('speaking'))
-    client.on('agent_stop_talking', () => setTimeout(() => setAgentState('listening'), 3500))
-    client.on('update',             (u) => { if (u.transcript) setTranscript(u.transcript) })
-    client.on('error',              (err) => { console.error('Retell error:', err); setError('Connection issue — please try again.'); setCallState('idle'); setAgentState('idle') })
+    client.on('call_started', () => { setCallState('active'); setAgentState('listening'); setError(null) })
+    client.on('call_ended',   () => { setCallState('ended'); setAgentState('idle'); setTimeout(() => setCallState('idle'), 2200) })
 
-    return () => { try { client.stopCall() } catch {} }
+    client.on('agent_start_talking', () => {
+      // Cancel any pending stop — agent is speaking again
+      agentDoneRef.current = false
+      if (stopTimerRef.current) { clearTimeout(stopTimerRef.current); stopTimerRef.current = null }
+      setAgentState('speaking')
+    })
+
+    // Server says agent is done — but audio buffer may still be playing
+    client.on('agent_stop_talking', scheduleStop)
+
+    // Raw audio samples from agent's audio track (enabled via emitRawAudioSamples)
+    // Fires every animation frame — use RMS to detect true silence
+    client.on('audio', (samples) => {
+      if (!agentDoneRef.current) return
+      const rms = Math.sqrt(samples.reduce((sum, s) => sum + s * s, 0) / samples.length)
+      if (rms < 0.003) {
+        if (stopTimerRef.current) { clearTimeout(stopTimerRef.current); stopTimerRef.current = null }
+        agentDoneRef.current = false
+        setAgentState('listening')
+      }
+    })
+
+    client.on('update', (u) => { if (u.transcript) setTranscript(u.transcript) })
+    client.on('error',  (err) => { console.error('Retell error:', err); setError('Connection issue — please try again.'); setCallState('idle'); setAgentState('idle') })
+
+    return () => {
+      try { client.stopCall() } catch {}
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current)
+    }
   }, [])
 
   const startCall = async () => {
@@ -588,7 +624,8 @@ export default function App() {
       if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`)
       const { access_token } = await res.json()
       if (!access_token) throw new Error('No access token returned.')
-      await retellRef.current.startCall({ accessToken: access_token })
+      // emitRawAudioSamples: true — lets us read the agent's actual audio level
+      await retellRef.current.startCall({ accessToken: access_token, emitRawAudioSamples: true })
     } catch (err) {
       setError(`Could not start call: ${err.message}`)
       setCallState('idle')
