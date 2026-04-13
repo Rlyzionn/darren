@@ -90,24 +90,22 @@ function InstallButton() {
       await prompt.prompt()
       const { outcome } = await prompt.userChoice
       if (outcome === 'accepted') { setInstalled(true); setPrompt(null) }
-    } else if (isIOS) {
+    } else {
+      // iOS or browser without native prompt — show instructions
       setShowTip((s) => !s)
     }
   }
 
   return (
     <div ref={tipRef} className="relative" style={{ zIndex: 50 }}>
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+      <button
         onClick={handleClick}
         title="Install Darren"
-        className="flex items-center gap-2 px-4 py-2 rounded-full text-white/50 hover:text-white/90 transition-colors duration-200 text-[11px] tracking-[0.2em] uppercase"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-white/70 transition-colors duration-200"
         style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
       >
-        <Download size={12} />
-        Install
-      </motion.button>
+        <Download size={13} />
+      </button>
 
       <AnimatePresence>
         {showTip && (
@@ -125,8 +123,17 @@ function InstallButton() {
               boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
             }}
           >
-            <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Add to Home Screen</p>
-            Tap the <span className="text-white/80">Share</span> button in Safari, then tap <span className="text-white/80">Add to Home Screen</span>.
+            {isIOS ? (
+              <>
+                <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Add to Home Screen</p>
+                Tap the <span className="text-white/80">Share</span> button in Safari, then tap <span className="text-white/80">Add to Home Screen</span>.
+              </>
+            ) : (
+              <>
+                <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Install Darren</p>
+                Open this page in <span className="text-white/80">Chrome</span> or <span className="text-white/80">Edge</span> and the install prompt will appear automatically.
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
