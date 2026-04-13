@@ -48,8 +48,7 @@ function DisclaimerMark() {
             }}
           >
             <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Heads up</p>
-            Let Darren finish speaking before asking it to search News, Web, or Email.
-            If you interrupt mid-response, Darren will complete its current answer first — then carry out your search request.
+            Let Darren search News, Web, or Email after you instruct it to — without interrupting. If you interrupt, Darren will answer your interrupted message first and not the query you told it to carry out, like searching News, Web, or Email.
           </motion.div>
         )}
       </AnimatePresence>
@@ -58,43 +57,80 @@ function DisclaimerMark() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Install Button — shows only when PWA install prompt is available
+// Install Button — native prompt on Chrome/Edge, instructions tooltip on iOS
 // ─────────────────────────────────────────────────────────────────────────────
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent)
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+
 function InstallButton() {
-  const [prompt, setPrompt] = useState(null)
-  const [installed, setInstalled] = useState(false)
+  const [prompt, setPrompt]       = useState(null)
+  const [installed, setInstalled] = useState(isInStandaloneMode)
+  const [showTip, setShowTip]     = useState(false)
+  const tipRef = useRef(null)
 
   useEffect(() => {
-    function handler(e) {
-      e.preventDefault()
-      setPrompt(e)
-    }
+    function handler(e) { e.preventDefault(); setPrompt(e) }
     window.addEventListener('beforeinstallprompt', handler)
     window.addEventListener('appinstalled', () => { setInstalled(true); setPrompt(null) })
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
-  if (installed || !prompt) return null
+  useEffect(() => {
+    function handleClick(e) {
+      if (tipRef.current && !tipRef.current.contains(e.target)) setShowTip(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
-  const handleInstall = async () => {
-    if (!prompt) return
-    await prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    if (outcome === 'accepted') { setInstalled(true); setPrompt(null) }
+  if (installed) return null
+
+  const handleClick = async () => {
+    if (prompt) {
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      if (outcome === 'accepted') { setInstalled(true); setPrompt(null) }
+    } else if (isIOS) {
+      setShowTip((s) => !s)
+    }
   }
 
   return (
-    <motion.button
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      onClick={handleInstall}
-      title="Install Darren"
-      className="flex items-center gap-2 px-4 py-2 rounded-full text-white/50 hover:text-white/90 transition-colors duration-200 text-[11px] tracking-[0.2em] uppercase"
-      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
-    >
-      <Download size={12} />
-      Install
-    </motion.button>
+    <div ref={tipRef} className="relative" style={{ zIndex: 50 }}>
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        onClick={handleClick}
+        title="Install Darren"
+        className="flex items-center gap-2 px-4 py-2 rounded-full text-white/50 hover:text-white/90 transition-colors duration-200 text-[11px] tracking-[0.2em] uppercase"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <Download size={12} />
+        Install
+      </motion.button>
+
+      <AnimatePresence>
+        {showTip && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute top-10 right-0 w-64 rounded-2xl p-4 text-white/60 text-xs leading-relaxed"
+            style={{
+              background: 'rgba(10,10,20,0.92)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+            }}
+          >
+            <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Add to Home Screen</p>
+            Tap the <span className="text-white/80">Share</span> button in Safari, then tap <span className="text-white/80">Add to Home Screen</span>.
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }
 
@@ -529,7 +565,7 @@ export default function App() {
     client.on('call_started',       () => { setCallState('active'); setAgentState('listening'); setError(null) })
     client.on('call_ended',         () => { setCallState('ended'); setAgentState('idle'); setTimeout(() => setCallState('idle'), 2200) })
     client.on('agent_start_talking',() => setAgentState('speaking'))
-    client.on('agent_stop_talking', () => setAgentState('listening'))
+    client.on('agent_stop_talking', () => setTimeout(() => setAgentState('listening'), 1000))
     client.on('update',             (u) => { if (u.transcript) setTranscript(u.transcript) })
     client.on('error',              (err) => { console.error('Retell error:', err); setError('Connection issue — please try again.'); setCallState('idle'); setAgentState('idle') })
 
