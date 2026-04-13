@@ -572,7 +572,7 @@ export default function App() {
     client.on('call_started',       () => { setCallState('active'); setAgentState('listening'); setError(null) })
     client.on('call_ended',         () => { setCallState('ended'); setAgentState('idle'); setTimeout(() => setCallState('idle'), 2200) })
     client.on('agent_start_talking',() => setAgentState('speaking'))
-    client.on('agent_stop_talking', () => setTimeout(() => setAgentState('listening'), 1000))
+    client.on('agent_stop_talking', () => setTimeout(() => setAgentState('listening'), 3500))
     client.on('update',             (u) => { if (u.transcript) setTranscript(u.transcript) })
     client.on('error',              (err) => { console.error('Retell error:', err); setError('Connection issue — please try again.'); setCallState('idle'); setAgentState('idle') })
 
