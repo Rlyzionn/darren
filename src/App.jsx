@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { Mic, MicOff, PhoneOff, MessageSquare, Phone, Download, Info } from 'lucide-react'
+import { Mic, MicOff, PhoneOff, MessageSquare, Phone, Download, Info, Loader2 } from 'lucide-react'
 import { RetellWebClient } from 'retell-client-js-sdk'
 
 const PASSWORD = 'empowerai'
@@ -142,119 +142,88 @@ function InstallButton() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated background — distinct drifting blobs, reactive to speech
+// Animated background — lightweight distinct blobs, GPU-friendly
 // ─────────────────────────────────────────────────────────────────────────────
 function BackgroundCanvas({ speaking }) {
-  const d1 = speaking ? 6  : 24
-  const d2 = speaking ? 7  : 28
-  const d3 = speaking ? 5  : 20
-  const d4 = speaking ? 8  : 32
+  const d1 = speaking ? 7  : 24
+  const d2 = speaking ? 8  : 28
+  const d3 = speaking ? 6  : 20
+  const d4 = speaking ? 9  : 32
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
 
-      {/* ── Subtle centre pulse — kept very small so blobs stay distinct ── */}
+      {/* ── Centre pulse — opacity only, no scale (cheaper) ── */}
       <motion.div
-        animate={speaking
-          ? { opacity: [0.06, 0.14, 0.08, 0.14, 0.06], scale: [1, 1.06, 1.02, 1.07, 1] }
-          : { opacity: [0.02, 0.04, 0.02],              scale: [1, 1.02, 1]             }}
-        transition={{ duration: speaking ? 2.4 : 6, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ opacity: speaking ? [0.04, 0.10, 0.04] : [0.01, 0.03, 0.01] }}
+        transition={{ duration: speaking ? 2.8 : 6, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', inset: '10%',
-          background: 'radial-gradient(ellipse at 50% 50%, rgba(80,0,180,0.9) 0%, transparent 55%)',
+          position: 'absolute', inset: '15%',
+          background: 'radial-gradient(ellipse at 50% 50%, rgba(80,0,180,0.85) 0%, transparent 55%)',
           filter: 'blur(50px)',
         }}
       />
 
-      {/* ── Edge rim — very faint, just defines the space ── */}
+      {/* ── Blob 1 — top left, purple ── */}
       <motion.div
-        animate={speaking
-          ? { opacity: [0.08, 0.18, 0.10, 0.18, 0.08] }
-          : { opacity: [0.02, 0.04, 0.02]              }}
-        transition={{ duration: speaking ? 2.0 : 7, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(50,0,120,0.4) 100%)',
-          filter: 'blur(20px)',
-        }}
-      />
-
-      {/* ── Blob 1 — top left, sharp purple ── */}
-      <motion.div
-        animate={{
-          x: ['-5%', '10%', '-3%', '-5%'],
-          y: ['4%', '-6%', '10%', '4%'],
-          scale: speaking ? [1, 1.12, 1.04, 1.14, 1] : [1, 1.02, 1],
-        }}
+        animate={{ x: ['-5%', '8%', '-3%', '-5%'], y: ['4%', '-5%', '8%', '4%'] }}
         transition={{ duration: d1, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', width: '45vw', height: '45vw', top: '-10%', left: '-8%',
+          position: 'absolute', width: '40vw', height: '40vw', top: '-8%', left: '-6%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(110,0,230,0.62) 0%, transparent 55%)'
-            : 'radial-gradient(circle, rgba(38,0,90,0.30) 0%, transparent 55%)',
+            ? 'radial-gradient(circle, rgba(100,0,210,0.45) 0%, transparent 55%)'
+            : 'radial-gradient(circle, rgba(38,0,90,0.20) 0%, transparent 55%)',
           filter: 'blur(45px)',
-          transition: 'background 0.7s ease',
+          transition: 'background 1s ease',
         }}
       />
 
-      {/* ── Blob 2 — bottom right, sharp blue ── */}
+      {/* ── Blob 2 — bottom right, blue ── */}
       <motion.div
-        animate={{
-          x: ['6%', '-10%', '3%', '6%'],
-          y: ['-5%', '8%', '-10%', '-5%'],
-          scale: speaking ? [1, 1.10, 1.03, 1.12, 1] : [1, 1.02, 1],
-        }}
+        animate={{ x: ['5%', '-8%', '3%', '5%'], y: ['-4%', '7%', '-8%', '-4%'] }}
         transition={{ duration: d2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', width: '42vw', height: '42vw', bottom: '-10%', right: '-8%',
+          position: 'absolute', width: '38vw', height: '38vw', bottom: '-8%', right: '-6%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(0,60,210,0.58) 0%, transparent 52%)'
-            : 'radial-gradient(circle, rgba(0,18,70,0.30) 0%, transparent 52%)',
+            ? 'radial-gradient(circle, rgba(0,50,200,0.42) 0%, transparent 52%)'
+            : 'radial-gradient(circle, rgba(0,18,70,0.20) 0%, transparent 52%)',
           filter: 'blur(42px)',
-          transition: 'background 0.7s ease',
+          transition: 'background 1s ease',
         }}
       />
 
       {/* ── Blob 3 — mid left, indigo ── */}
       <motion.div
-        animate={{
-          x: ['-3%', '5%', '-6%', '-3%'],
-          y: ['6%', '-3%', '4%', '6%'],
-          scale: speaking ? [1, 1.13, 1.04, 1.11, 1] : [1, 1.05, 0.97, 1],
-        }}
+        animate={{ x: ['-3%', '5%', '-5%', '-3%'], y: ['5%', '-3%', '4%', '5%'] }}
         transition={{ duration: d3, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', width: '36vw', height: '36vw', top: '30%', left: '5%',
+          position: 'absolute', width: '32vw', height: '32vw', top: '32%', left: '4%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(40,0,160,0.52) 0%, transparent 52%)'
-            : 'radial-gradient(circle, rgba(0,28,55,0.25) 0%, transparent 52%)',
+            ? 'radial-gradient(circle, rgba(40,0,150,0.38) 0%, transparent 52%)'
+            : 'radial-gradient(circle, rgba(0,20,50,0.16) 0%, transparent 52%)',
           filter: 'blur(38px)',
-          transition: 'background 0.7s ease',
+          transition: 'background 1s ease',
         }}
       />
 
-      {/* ── Blob 4 — top right, deep violet accent ── */}
+      {/* ── Blob 4 — top right, violet ── */}
       <motion.div
-        animate={{
-          x: ['4%', '-8%', '6%', '4%'],
-          y: ['-4%', '6%', '-8%', '-4%'],
-          scale: speaking ? [1, 1.10, 1.05, 1.12, 1] : [1, 1.02, 0.98, 1],
-        }}
+        animate={{ x: ['3%', '-6%', '5%', '3%'], y: ['-3%', '5%', '-6%', '-3%'] }}
         transition={{ duration: d4, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', width: '32vw', height: '32vw', top: '-5%', right: '5%',
+          position: 'absolute', width: '30vw', height: '30vw', top: '-4%', right: '4%',
           background: speaking
-            ? 'radial-gradient(circle, rgba(80,0,180,0.48) 0%, transparent 50%)'
-            : 'radial-gradient(circle, rgba(20,0,50,0.22) 0%, transparent 50%)',
+            ? 'radial-gradient(circle, rgba(70,0,160,0.35) 0%, transparent 50%)'
+            : 'radial-gradient(circle, rgba(20,0,50,0.14) 0%, transparent 50%)',
           filter: 'blur(35px)',
-          transition: 'background 0.7s ease',
+          transition: 'background 1s ease',
         }}
       />
 
-      {/* ── Vignette — keeps orb as focal point ── */}
+      {/* ── Vignette ── */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.6) 100%)',
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%)',
         pointerEvents: 'none',
       }} />
     </div>
@@ -390,12 +359,13 @@ function OrbVisualizer({ callState, agentState }) {
     ? '0 0 28px rgba(255,255,255,0.16), 0 22px 44px rgba(0,0,0,0.72), inset 0 -14px 22px rgba(0,0,0,0.45), inset 0 5px 12px rgba(255,255,255,0.10)'
     : '0 0 14px rgba(255,255,255,0.06), 0 18px 36px rgba(0,0,0,0.7), inset 0 -12px 20px rgba(0,0,0,0.4), inset 0 4px 10px rgba(255,255,255,0.06)'
 
+  const isListening = callState === 'active' && !speaking
   const statusLabel =
     callState === 'idle'         ? 'Ready'
     : callState === 'connecting' ? 'Connecting…'
     : callState === 'ended'      ? 'Call Ended'
     : speaking                   ? 'Darren Speaking'
-    : 'Listening…'
+    : 'Listening, searching and surfing..'
 
   const orbitDuration = speaking ? 3.5 : active ? 7 : 11
 
@@ -477,7 +447,7 @@ function OrbVisualizer({ callState, agentState }) {
         </div>
       </motion.div>
 
-      <div className="absolute -bottom-8 left-0 right-0 text-center pointer-events-none">
+      <div className="absolute -bottom-8 left-0 right-0 flex items-center justify-center gap-1.5 pointer-events-none">
         <motion.p
           key={statusLabel}
           initial={{ opacity: 0 }}
@@ -487,6 +457,9 @@ function OrbVisualizer({ callState, agentState }) {
         >
           {statusLabel}
         </motion.p>
+        {isListening && (
+          <Loader2 size={10} className="text-white/20 animate-spin" />
+        )}
       </div>
     </motion.div>
   )
@@ -503,17 +476,18 @@ function TranscriptHalo({ transcript }) {
   return (
     <>
       <div className="flex flex-col items-center justify-end gap-3 pointer-events-none" style={{ minHeight: 110, width: 360 }}>
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {visibleAgent.map((msg, i) => {
             const isNewest = i === visibleAgent.length - 1
             return (
               <motion.p
                 key={msg.content.slice(0, 40)}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: isNewest ? 0.78 : 0.28, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.45, ease: 'easeOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: isNewest ? 0.75 : 0.25 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 className="text-white text-sm leading-relaxed text-center max-w-xs"
+                style={{ willChange: 'opacity' }}
               >
                 {msg.content}
               </motion.p>
@@ -523,15 +497,16 @@ function TranscriptHalo({ transcript }) {
       </div>
 
       <div className="flex flex-col items-center justify-start pointer-events-none" style={{ minHeight: 72, width: 360 }}>
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence>
           {lastUserMsg && (
             <motion.p
               key={lastUserMsg.content.slice(0, 40)}
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 0.38, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.35 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
               className="text-white text-xs leading-relaxed text-center max-w-xs mt-4 italic"
+              style={{ willChange: 'opacity' }}
             >
               {lastUserMsg.content}
             </motion.p>
