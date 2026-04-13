@@ -6,36 +6,49 @@ import { RetellWebClient } from 'retell-client-js-sdk'
 const PASSWORD = 'empowerai'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated background — slow drifting colour blobs
+// Animated background — slow drifting colour blobs, reactive to agent speech
 // ─────────────────────────────────────────────────────────────────────────────
-function BackgroundCanvas() {
+function BackgroundCanvas({ speaking }) {
+  const d1 = speaking ? 6  : 24
+  const d2 = speaking ? 7  : 28
+  const d3 = speaking ? 5  : 20
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
       <motion.div
         animate={{ x: ['-8%', '12%', '-4%', '-8%'], y: ['6%', '-8%', '14%', '6%'] }}
-        transition={{ duration: 24, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: d1, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', width: '75vw', height: '75vw', top: '-20%', left: '-15%',
-          background: 'radial-gradient(circle, rgba(38,0,90,0.45) 0%, transparent 65%)',
+          background: speaking
+            ? 'radial-gradient(circle, rgba(100,0,220,0.78) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(38,0,90,0.45) 0%, transparent 65%)',
           filter: 'blur(70px)',
+          transition: 'background 0.6s ease',
         }}
       />
       <motion.div
         animate={{ x: ['8%', '-12%', '4%', '8%'], y: ['-6%', '10%', '-12%', '-6%'] }}
-        transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: d2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', width: '65vw', height: '65vw', bottom: '-18%', right: '-12%',
-          background: 'radial-gradient(circle, rgba(0,18,70,0.5) 0%, transparent 65%)',
+          background: speaking
+            ? 'radial-gradient(circle, rgba(0,60,200,0.75) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(0,18,70,0.5) 0%, transparent 65%)',
           filter: 'blur(65px)',
+          transition: 'background 0.6s ease',
         }}
       />
       <motion.div
         animate={{ x: ['-4%', '6%', '-8%', '-4%'], y: ['8%', '-4%', '5%', '8%'], scale: [1, 1.08, 0.96, 1] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: d3, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           position: 'absolute', width: '50vw', height: '50vw', top: '25%', left: '20%',
-          background: 'radial-gradient(circle, rgba(0,38,55,0.38) 0%, transparent 65%)',
+          background: speaking
+            ? 'radial-gradient(circle, rgba(0,100,140,0.72) 0%, transparent 65%)'
+            : 'radial-gradient(circle, rgba(0,38,55,0.38) 0%, transparent 65%)',
           filter: 'blur(55px)',
+          transition: 'background 0.6s ease',
         }}
       />
     </div>
@@ -62,7 +75,7 @@ function PasswordGate({ onUnlock }) {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center relative overflow-hidden">
-      <BackgroundCanvas />
+      <BackgroundCanvas speaking={false} />
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
@@ -463,7 +476,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden select-none">
 
-      <BackgroundCanvas />
+      <BackgroundCanvas speaking={agentState === 'speaking'} />
 
       {/* Top wordmark */}
       <motion.div
