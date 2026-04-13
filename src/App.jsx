@@ -1,9 +1,102 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { Mic, MicOff, PhoneOff, MessageSquare, Phone } from 'lucide-react'
+import { Mic, MicOff, PhoneOff, MessageSquare, Phone, Download, Info } from 'lucide-react'
 import { RetellWebClient } from 'retell-client-js-sdk'
 
 const PASSWORD = 'empowerai'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Disclaimer Mark — top left info icon with dropdown
+// ─────────────────────────────────────────────────────────────────────────────
+function DisclaimerMark() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative" style={{ zIndex: 50 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        title="Disclaimer"
+        className="w-8 h-8 rounded-full flex items-center justify-center text-white/30 hover:text-white/70 transition-colors duration-200"
+        style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <Info size={13} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute top-10 left-0 w-72 rounded-2xl p-4 text-white/60 text-xs leading-relaxed"
+            style={{
+              background: 'rgba(10,10,20,0.92)',
+              backdropFilter: 'blur(24px)',
+              WebkitBackdropFilter: 'blur(24px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.7)',
+            }}
+          >
+            <p className="text-white/80 text-[11px] font-medium tracking-widest uppercase mb-2">Heads up</p>
+            Let Darren finish speaking before asking it to search News, Web, or Email.
+            If you interrupt mid-response, Darren will complete its current answer first — then carry out your search request.
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Install Button — shows only when PWA install prompt is available
+// ─────────────────────────────────────────────────────────────────────────────
+function InstallButton() {
+  const [prompt, setPrompt] = useState(null)
+  const [installed, setInstalled] = useState(false)
+
+  useEffect(() => {
+    function handler(e) {
+      e.preventDefault()
+      setPrompt(e)
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => { setInstalled(true); setPrompt(null) })
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  if (installed || !prompt) return null
+
+  const handleInstall = async () => {
+    if (!prompt) return
+    await prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'accepted') { setInstalled(true); setPrompt(null) }
+  }
+
+  return (
+    <motion.button
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      onClick={handleInstall}
+      title="Install Darren"
+      className="flex items-center gap-2 px-4 py-2 rounded-full text-white/50 hover:text-white/90 transition-colors duration-200 text-[11px] tracking-[0.2em] uppercase"
+      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+    >
+      <Download size={12} />
+      Install
+    </motion.button>
+  )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Animated background — slow drifting colour blobs, reactive to agent speech
@@ -478,17 +571,20 @@ export default function App() {
 
       <BackgroundCanvas speaking={agentState === 'speaking'} />
 
-      {/* Top wordmark */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4, duration: 0.6 }}
-        className="absolute top-10 text-center pointer-events-none"
-        style={{ zIndex: 2 }}
-      >
-        <h1 className="text-white/70 text-sm tracking-[0.55em] uppercase font-light">Darren</h1>
-        <p className="text-white/18 text-[9px] tracking-[0.35em] uppercase mt-1">AI Phone Agent</p>
-      </motion.div>
+      {/* Top bar — disclaimer left, wordmark centre, install right */}
+      <div className="absolute top-6 left-0 right-0 flex items-center justify-between px-6" style={{ zIndex: 10 }}>
+        <DisclaimerMark />
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none"
+        >
+          <h1 className="text-white/70 text-sm tracking-[0.55em] uppercase font-light">Darren</h1>
+          <p className="text-white/25 text-[9px] tracking-[0.35em] uppercase mt-1">AI Phone Agent</p>
+        </motion.div>
+        <InstallButton />
+      </div>
 
       {/* Error banner */}
       <AnimatePresence>
