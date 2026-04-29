@@ -1,0 +1,523 @@
+{
+  "name": "Darren — AI Phone Agent v3",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}",
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        336,
+        240
+      ],
+      "id": "6a98f018-e38c-4741-899b-aa321ef47c94",
+      "name": "Get many messages in Gmail",
+      "webhookId": "e935e2ea-d271-4361-99b9-82b6e4222a97",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "O4pjb8nDUS5mQpLE",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "toRecipients": "={{ $fromAI('toRecipients', 'exact email address of the recipient — must be confirmed with owner before calling this tool', 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        464,
+        240
+      ],
+      "id": "6a0672c8-85d8-4e47-9c59-d412e70f073c",
+      "name": "Create a draft in Gmail",
+      "webhookId": "b3d20fbd-2018-4105-991f-958f301daf11",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "O4pjb8nDUS5mQpLE",
+          "name": "Gmail account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.chatInput || $json.body.text || $json.body.transcript || \"Hello\" }}",
+        "options": {
+          "systemMessage": "=You are Darren, a dedicated AI phone agent and personal assistant.\n\nToday is {{ $now.toFormat('cccc, LLLL d, yyyy') }}. Current ISO datetime: {{ $now.toISO() }}. Timezone: {{ $now.zoneName }}. When the user gives a relative date like \"today\", \"tomorrow\", \"next Friday\", or any month/day without a year, ALWAYS use the current year from the ISO datetime above. Never assume a past year.\n\nTools you can use:\n1. Search Gmail — Gmail search syntax (from:, subject:, after:YYYY/MM/DD).\n2. Create Email Draft — save drafts only, never send.\n3. Web Research (Tavily) — live info, cite sources.\n4. Create / Get / Update / Delete event in Google Calendar.\n5. Get many events in Google Calendar — list events in a window.\n\nCalendar rules:\n- Convert relative time (\"tomorrow 3pm\", \"next Friday\") into ISO 8601 in the owner's timezone before calling a tool.\n- Before update or delete, call \"Get many events\" to find the eventId, then confirm with the owner.\n- Default duration is 1 hour if not specified. State assumptions out loud.\n- After creating an event, confirm title + time in one sentence.\n- After get_calendar_events, give a natural spoken summary do NOT read event IDs aloud.\n- Silently remember each event's id from the tool result. When the owner says \"delete the 7pm one\" or \"move team sync\", match by description and pass the exact id to delete or update. Never invent, ask for, or speak ids.\n\n\nEmail address rules:\n- NEVER guess, invent, or assume an email address. If the owner says \"email John\" or \"draft to the team\", ask for the exact email address before calling any tool.\n- When the owner dictates an email address verbally, read it back character by character to confirm before creating the draft (e.g. \"That's j-o-h-n at e-x-a-m-p-l-e dot c-o-m — correct?\").\n- Only call Create Email Draft once the recipient address has been explicitly confirmed by the owner.\n- If the owner corrects a spelling, use only their corrected version — never the version you had before.\n\nBe concise, professional, frank. If a tool fails, say so plainly",
+          "maxIterations": 6,
+          "enableStreaming": false
+        }
+      },
+      "id": "49cec732-3805-4105-9f2f-47753ccca0c7",
+      "name": "Darren AI Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        656,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.tavily.com/search",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"api_key\": \"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\",\n  \"query\": \"=\",\n  \"max_results\": 5,\n  \"search_depth\": \"basic\"\n}",
+        "sendBody": true,
+        "specifyBody": "={{ \"json\" }}",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"api_key\": \"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\",\n  \"query\": \"={{ $fromAI('query', 'search query for web research', 'string') }}\",\n  \"max_results\": 5,\n  \"search_depth\": \"basic\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        592,
+        240
+      ],
+      "id": "2f76827c-886f-422d-acd8-3b40b49cb647",
+      "name": "Web Research (Tavily)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "output-field",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "31cbdc01-1faa-4490-a8c6-f5bf665936e9",
+      "name": "Darren Reply1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1440,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "872acbb4-38cf-4ba1-add4-0daa5a06018c",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "a2c65edd-5c0f-42cd-a8e7-24befee3659b",
+      "name": "Webhook",
+      "webhookId": "872acbb4-38cf-4ba1-add4-0daa5a06018c"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1664,
+        16
+      ],
+      "id": "53e9e61a-b781-4fd7-93fb-43c6fbdbeb17",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7ac9562d-d2b3-49f3-b73d-080aa7070a5e",
+              "leftValue": "={{ $json.body.chatInput }}\n",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": "={{ false }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        16
+      ],
+      "id": "49cf1056-e086-4f9b-bba4-1ec0b38ab4dd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        208,
+        240
+      ],
+      "id": "f1436a88-6064-4703-ba8a-cd5309555e2d",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "uKpZiERkNlonyVd3",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "randy.carpediem@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "start": "={{ $fromAI('start', 'event start datetime in ISO 8601, e.g. 2026-04-25T15:00:00', 'string') }}",
+        "end": "={{ $fromAI('end', 'event end datetime in ISO 8601', 'string') }}",
+        "additionalFields": {
+          "attendees": [],
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', `event title`, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        240
+      ],
+      "id": "cdc0d920-3af7-4994-99ed-2f4f96821707",
+      "name": "Create an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ztM9eImnTQxnzcHh",
+          "name": "Google Calendar account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "randy.carpediem@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ $fromAI('eventId', 'the Google Calendar event ID', 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        848,
+        240
+      ],
+      "id": "501c5b43-cb3d-4163-85a2-dafa0bae4ffc",
+      "name": "Get an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ztM9eImnTQxnzcHh",
+          "name": "Google Calendar account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "randy.carpediem@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ $fromAI('eventId', 'event ID to update', 'string') }}",
+        "useDefaultReminders": false,
+        "updateFields": {
+          "description": "={{ $fromAI('description', 'new description', 'string') }}",
+          "end": "={{ $fromAI('end', 'new end in ISO 8601', 'string') }}",
+          "start": "={{ $fromAI('start', 'new start in ISO 8601', 'string') }}",
+          "summary": "={{ $fromAI('summary', 'new title', 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        976,
+        240
+      ],
+      "id": "165660be-9b54-4ddc-88a6-2f7b0839d94e",
+      "name": "Update an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ztM9eImnTQxnzcHh",
+          "name": "Google Calendar account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "randy.carpediem@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "eventId": "={{ $fromAI('eventId', 'event ID to delete', 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        1104,
+        240
+      ],
+      "id": "8cc1d50d-b936-4b34-bbc4-3284d91ad77b",
+      "name": "Delete an event in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ztM9eImnTQxnzcHh",
+          "name": "Google Calendar account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "id",
+          "value": "randy.carpediem@gmail.com",
+          "__regex": "(^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\\.[a-zA-Z0-9-]+)*)"
+        },
+        "limit": 10,
+        "timeMin": "={{ $fromAI('timeMin', 'ISO 8601 start of search window', 'string') }}",
+        "timeMax": "={{ $fromAI('timeMax', 'ISO 8601 end of search window', 'string') }}",
+        "options": {
+          "query": "={{ $fromAI('query', 'optional free-text filter like a person or keyword', 'string') }}",
+          "timeZone": {
+            "__rl": true,
+            "value": "America/Los_Angeles",
+            "mode": "list",
+            "cachedResultName": "America/Los_Angeles"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        1232,
+        240
+      ],
+      "id": "2a2c8bd4-ce26-4ce1-b2de-b9daecf66e41",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ztM9eImnTQxnzcHh",
+          "name": "Google Calendar account 4"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get many messages in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a draft in Gmail": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Web Research (Tavily)": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Darren AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Darren Reply1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Darren Reply1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "Darren AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3956189b-fac4-4367-89b5-4add8d7c3e01",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b957403aeebfe0dac427384dc5f147c849ab94fb2d3e1ac2da8291714e94c2f7"
+  },
+  "id": "9CS2Pkrq0szzMBfC",
+  "tags": []
+}
